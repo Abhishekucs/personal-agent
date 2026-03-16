@@ -1,107 +1,108 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 export default function Home() {
-  const [soul, setSoul] = useState('');
-  const [userDesc, setUserDesc] = useState('');
-  const [status, setStatus] = useState('Loading...');
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
+  const [userName, setUserName] = useState('');
+  const [agentId, setAgentId] = useState('');
+  const [agentType, setAgentType] = useState('gym');
+  const [status, setStatus] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    // Fetch Agent Identity/Config
-    fetch('/api/agent/config')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          setSoul(data.soul);
-          setUserDesc(data.user);
-        }
-      });
-
-    // Fetch OpenClaw Gateway Status
-    fetch('/api/agent/status')
-      .then((res) => res.json())
-      .then((data) => {
-        setStatus(data.status || 'Offline');
-      })
-      .catch(() => setStatus('Offline'));
-  }, []);
-
-  const handleSave = async () => {
-    setSaving(true);
-    setMessage('');
+  const handleDeploy = async () => {
+    setLoading(true);
+    setStatus('Configuring your custom OpenClaw agent...');
     try {
-      const response = await fetch('/api/agent/config', {
+      const response = await fetch('/api/agent/deploy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ soul, user: userDesc }),
+        body: JSON.stringify({ agentId, agentType, userName }),
       });
       const data = await response.json();
+      
       if (data.success) {
-        setMessage('Agent profile saved successfully! ✨');
+        setStatus(`✅ ${data.message} Workspace configured at ${data.workspace}`);
       } else {
-        setMessage('Error saving profile: ' + data.error);
+        setStatus('❌ Error: ' + data.error);
       }
     } catch (e: any) {
-      setMessage('Network error: ' + e.message);
+      setStatus('❌ Network error: ' + e.message);
     }
-    setSaving(false);
+    setLoading(false);
   };
 
   return (
-    <main className="min-h-screen bg-zinc-950 p-8 text-white">
-      <div className="max-w-4xl mx-auto space-y-8">
-        <header className="flex justify-between items-center border-b border-zinc-800 pb-4">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">
-              OpenClaw Agent Setup
-            </h1>
-            <p className="text-zinc-400 text-sm mt-1">Manage your personal AI agent identity behind the scenes.</p>
-          </div>
-          <div className="px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-sm font-mono whitespace-pre-wrap">
-            {status}
-          </div>
+    <main className="min-h-screen bg-zinc-950 p-8 text-white flex items-center justify-center">
+      <div className="max-w-xl w-full mx-auto space-y-8 bg-zinc-900 border border-zinc-800 p-8 rounded-2xl shadow-2xl">
+        <header className="border-b border-zinc-800 pb-4 text-center">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-teal-500 bg-clip-text text-transparent">
+            Invook Agent Marketplace
+          </h1>
+          <p className="text-zinc-400 text-sm mt-2">Deploy your own custom OpenClaw AI Agent instantly.</p>
         </header>
 
         <section className="space-y-6">
           <div className="flex flex-col space-y-2">
-            <label className="text-lg font-semibold flex items-center gap-2">
-              <span className="text-xl">🤖</span> SOUL.md - Agent Identity
-            </label>
-            <p className="text-xs text-zinc-500">Who your agent is, how it behaves, its tone, rules, and core directives.</p>
-            <textarea
-              className="w-full h-64 p-4 bg-zinc-900 border border-zinc-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none font-mono text-sm"
-              value={soul}
-              onChange={(e) => setSoul(e.target.value)}
-              placeholder="# Identity\n\nYou are a helpful assistant..."
+            <label className="text-sm font-semibold text-zinc-300">Your Name</label>
+            <input
+              type="text"
+              className="w-full p-3 bg-zinc-950 border border-zinc-700 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-sm"
+              value={userName}
+              onChange={(e) => setUserName(e.target.value)}
+              placeholder="e.g. Abhi"
             />
           </div>
 
           <div className="flex flex-col space-y-2">
-            <label className="text-lg font-semibold flex items-center gap-2">
-              <span className="text-xl">👤</span> USER.md - Your Profile
-            </label>
-            <p className="text-xs text-zinc-500">What the agent knows about you, your preferences, and your goals.</p>
-            <textarea
-              className="w-full h-48 p-4 bg-zinc-900 border border-zinc-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none font-mono text-sm"
-              value={userDesc}
-              onChange={(e) => setUserDesc(e.target.value)}
-              placeholder="# User Profile\n\nName: Abhishek\nGoals: ..."
+            <label className="text-sm font-semibold text-zinc-300">Agent Identifier (Unique ID)</label>
+            <input
+              type="text"
+              className="w-full p-3 bg-zinc-950 border border-zinc-700 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-sm"
+              value={agentId}
+              onChange={(e) => setAgentId(e.target.value.toLowerCase().replace(/\s+/g, '-'))}
+              placeholder="e.g. abhi-gym-bot"
             />
+          </div>
+
+          <div className="flex flex-col space-y-2">
+            <label className="text-sm font-semibold text-zinc-300">Select Agent Type</label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[
+                { id: 'gym', icon: '🤖', title: 'Gym Bot' },
+                { id: 'sales', icon: '💼', title: 'Sales Bot' },
+                { id: 'support', icon: '🎧', title: 'Support Bot' },
+              ].map(bot => (
+                <button
+                  key={bot.id}
+                  onClick={() => setAgentType(bot.id)}
+                  className={`p-4 border rounded-xl flex flex-col items-center gap-2 transition-all ${
+                    agentType === bot.id 
+                      ? 'bg-teal-900/30 border-teal-500 shadow-[0_0_15px_rgba(20,184,166,0.3)]' 
+                      : 'bg-zinc-950 border-zinc-700 hover:border-zinc-500 text-zinc-400'
+                  }`}
+                >
+                  <span className="text-2xl">{bot.icon}</span>
+                  <span className="text-sm font-medium">{bot.title}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </section>
 
-        <footer className="flex items-center gap-4 border-t border-zinc-800 pt-6">
+        <footer className="pt-4 flex flex-col gap-4">
           <button
-            onClick={handleSave}
-            disabled={saving}
-            className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-50"
+            onClick={handleDeploy}
+            disabled={loading || !agentId}
+            className="w-full py-4 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-teal-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {saving ? 'Saving to workspace...' : 'Save Agent Identity'}
+            {loading ? 'Deploying...' : 'Deploy OpenClaw Agent ⚡️'}
           </button>
-          {message && <span className="text-sm font-medium text-emerald-400">{message}</span>}
+          
+          {status && (
+            <div className={`p-4 rounded-xl text-sm font-mono whitespace-pre-wrap ${status.includes('❌') ? 'bg-red-950/50 text-red-400 border border-red-900' : 'bg-emerald-950/50 text-emerald-400 border border-emerald-900'}`}>
+              {status}
+            </div>
+          )}
         </footer>
       </div>
     </main>
